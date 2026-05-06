@@ -21,8 +21,6 @@ property string status: "Unknown"
     property string previousCountry: ""
     property string previousProtocol: ""
     property bool previousConnected: false
-    property string selectedCountry: ""
-    property list<string> availableCountries: []
 
     function copyToClipboard(text) {
         Proc.runCommand("copy-clipboard", ["sh", "-c", "echo -n " + JSON.stringify(text) + " | xclip -selection clipboard"], function() {}, 5000)
@@ -38,30 +36,7 @@ property string status: "Unknown"
         onTriggered: fetchStatus()
     }
 
-    Component.onCompleted: {
-        fetchStatus()
-        fetchCountries()
-    }
-
-    function fetchCountries() {
-        Proc.runCommand(
-            "proton-countries",
-            ["protonvpn", "countries", "list"],
-            function(output, exitCode) {
-                if (exitCode !== 0 || !output) return
-                var lines = output.trim().split('\n')
-                var list = []
-                for (var i = 0; i < lines.length; i++) {
-                    var country = lines[i].trim()
-                    if (country) list.push(country)
-                }
-                if (list.length > 0) {
-                    availableCountries = ["Fastest"].concat(list)
-                }
-            },
-            30000
-        )
-    }
+    Component.onCompleted: fetchStatus()
 
     function fetchStatus() {
         if (root.commandRunning) return
@@ -140,10 +115,6 @@ property string status: "Unknown"
         
         root.commandRunning = true
         var args = root.connected ? ["protonvpn", "disconnect"] : ["protonvpn", "connect"]
-        
-        if (!root.connected && root.selectedCountry && root.selectedCountry !== "Fastest") {
-            args.push("--country", root.selectedCountry)
-        }
         
         Proc.runCommand(
             "proton-toggle",
@@ -416,25 +387,6 @@ property string status: "Unknown"
                                         color: Theme.surfaceVariantText
                                     }
                                 }
-                            }
-                        }
-                    }
-
-                    Row {
-                        spacing: Theme.spacingM
-                        anchors.horizontalCenter: parent.horizontalCenter
-                        visible: !root.connected && root.cliReady
-                        width: parent.width - Theme.spacingM * 2
-
-                        ComboBox {
-                            id: countryCombo
-                            width: parent.width
-                            model: root.availableCountries
-                            currentIndex: root.selectedCountry && root.availableCountries.length > 0 ? root.availableCountries.indexOf(root.selectedCountry) : 0
-                            onCurrentIndexChanged: if (root.availableCountries.length > 0) root.selectedCountry = root.availableCountries[currentIndex]
-                            background: Rectangle {
-                                radius: Theme.cornerRadius
-                                color: Theme.surfaceContainer
                             }
                         }
                     }
