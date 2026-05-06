@@ -1,0 +1,75 @@
+import QtQuick
+import QtQuick.Controls
+import qs.Common
+import qs.Services
+import qs.Widgets
+import qs.Modules.Plugins
+
+PluginSettings {
+    id: root
+    pluginId: "protonVpn"
+
+    StyledText {
+        width: parent.width
+        text: "Proton VPN Settings"
+        font.pixelSize: Theme.fontSizeLarge
+        font.weight: Font.Bold
+        color: Theme.surfaceText
+    }
+
+    StyledRect {
+        width: parent.width
+        height: behaviorColumn.implicitHeight + Theme.spacingL * 2
+        radius: Theme.cornerRadius
+        color: Theme.surfaceContainerHigh
+
+        Column {
+            id: behaviorColumn
+            anchors.fill: parent
+            anchors.margins: Theme.spacingL
+            spacing: Theme.spacingM
+
+            StyledText {
+                text: "Behavior"
+                font.pixelSize: Theme.fontSizeMedium
+                font.weight: Font.Medium
+                color: Theme.surfaceText
+            }
+
+            ToggleSetting {
+                settingKey: "autoRefresh"
+                label: "Auto Refresh Status"
+                description: "Automatically check VPN status periodically."
+                defaultValue: true
+            }
+        }
+    }
+
+    StyledRect {
+        width: parent.width
+        height: noteColumn.implicitHeight + Theme.spacingL * 2
+        radius: Theme.cornerRadius
+        color: Theme.surfaceContainerHigh
+
+        Column {
+            id: noteColumn
+            anchors.fill: parent
+            anchors.margins: Theme.spacingL
+            spacing: Theme.spacingS
+
+            StyledText {
+                text: "Note"
+                font.pixelSize: Theme.fontSizeMedium
+                font.weight: Font.Medium
+                color: Theme.surfaceText
+            }
+
+            StyledText {
+                text: "Proton VPN CLI requires sudo to connect/disconnect. Add to sudoers:\n%wheel ALL=(ALL) NOPASSWD: /usr/bin/protonvpn"
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.surfaceVariantText
+                wrapMode: Text.WordWrap
+            }
+        }
+    }
+}

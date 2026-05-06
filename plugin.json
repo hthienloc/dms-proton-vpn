@@ -1,0 +1,17 @@
+{
+    "id": "protonVpn",
+    "name": "Proton VPN",
+    "description": "Proton VPN connection status and control widget.",
+    "version": "1.0.0",
+    "license": "GPL-3.0",
+    "author": "Loc Huynh",
+    "icon": "vpn_lock",
+    "type": "widget",
+    "capabilities": ["dankbar-widget"],
+    "component": "./ProtonVPNWidget.qml",
+    "settings": "./ProtonVPNSettings.qml",
+    "permissions": [
+        "settings_read",
+        "settings_write"
+    ]
+}
