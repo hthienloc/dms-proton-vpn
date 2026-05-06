@@ -218,7 +218,7 @@ property string status: "Unknown"
                 width: parent.width
                 headerText: "Proton VPN"
                 detailsText: root.status
-                showCloseButton: true
+                showCloseButton: false
 
                 Column {
                     width: parent.width

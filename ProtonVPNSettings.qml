@@ -65,8 +65,16 @@ PluginSettings {
             }
 
             StyledText {
-                text: "Proton VPN CLI requires sudo to connect/disconnect. Add to sudoers:\n%wheel ALL=(ALL) NOPASSWD: /usr/bin/protonvpn"
+                text: "1. Open sudoers: sudo visudo"
                 font.pixelSize: Theme.fontSizeSmall
+                font.family: "monospace"
+                color: Theme.surfaceVariantText
+            }
+
+            StyledText {
+                text: "2. Add: %wheel ALL=(ALL) NOPASSWD: /usr/bin/protonvpn"
+                font.pixelSize: Theme.fontSizeSmall
+                font.family: "monospace"
                 color: Theme.surfaceVariantText
                 wrapMode: Text.WordWrap
             }
