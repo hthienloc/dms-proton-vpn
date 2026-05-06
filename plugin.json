@@ -1,7 +1,7 @@
 {
     "id": "protonVpn",
     "name": "Proton VPN",
-    "description": "Proton VPN connection status and control widget.",
+    "description": "Proton VPN connection status and control widget",
     "version": "1.0.0",
     "license": "GPL-3.0",
     "author": "Loc Huynh",

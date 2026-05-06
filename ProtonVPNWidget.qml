@@ -21,6 +21,8 @@ property string status: "Unknown"
     property string previousCountry: ""
     property string previousProtocol: ""
     property bool previousConnected: false
+    property string selectedCountry: ""
+    property list<string> availableCountries: []
 
     function copyToClipboard(text) {
         Proc.runCommand("copy-clipboard", ["sh", "-c", "echo -n " + JSON.stringify(text) + " | xclip -selection clipboard"], function() {}, 5000)
@@ -36,7 +38,30 @@ property string status: "Unknown"
         onTriggered: fetchStatus()
     }
 
-    Component.onCompleted: fetchStatus()
+    Component.onCompleted: {
+        fetchStatus()
+        fetchCountries()
+    }
+
+    function fetchCountries() {
+        Proc.runCommand(
+            "proton-countries",
+            ["protonvpn", "countries"],
+            function(output, exitCode) {
+                if (exitCode !== 0 || !output) return
+                var lines = output.trim().split('\n')
+                var list = []
+                for (var i = 0; i < lines.length; i++) {
+                    var country = lines[i].trim()
+                    if (country) list.push(country)
+                }
+                if (list.length > 0) {
+                    availableCountries = ["Fastest"].concat(list)
+                }
+            },
+            30000
+        )
+    }
 
     function fetchStatus() {
         if (root.commandRunning) return
@@ -114,11 +139,15 @@ property string status: "Unknown"
         root.previousProtocol = root.protocol
         
         root.commandRunning = true
-        var cmd = root.connected ? ["protonvpn", "disconnect"] : ["protonvpn", "connect"]
+        var args = root.connected ? ["protonvpn", "disconnect"] : ["protonvpn", "connect"]
+        
+        if (!root.connected && root.selectedCountry && root.selectedCountry !== "Fastest") {
+            args.push("--country", root.selectedCountry)
+        }
         
         Proc.runCommand(
             "proton-toggle",
-            cmd,
+            args,
             function(output, exitCode) {
                 Proc.runCommand(
                     "proton-status",
@@ -388,6 +417,21 @@ property string status: "Unknown"
                                     }
                                 }
                             }
+                        }
+                    }
+
+                    Row {
+                        spacing: Theme.spacingM
+                        anchors.horizontalCenter: parent.horizontalCenter
+                        visible: !root.connected && root.cliReady
+                        width: parent.width - Theme.spacingM * 2
+
+                        StyledComboBox {
+                            id: countryCombo
+                            width: parent.width - DankButton { iconName: "link"; visible: false }.width - Theme.spacingS
+                            model: root.availableCountries
+                            currentIndex: root.selectedCountry ? root.availableCountries.indexOf(root.selectedCountry) : 0
+                            onCurrentIndexChanged: root.selectedCountry = root.availableCountries[currentIndex]
                         }
                     }
 
