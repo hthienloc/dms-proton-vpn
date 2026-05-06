@@ -46,7 +46,7 @@ property string status: "Unknown"
     function fetchCountries() {
         Proc.runCommand(
             "proton-countries",
-            ["protonvpn", "countries"],
+            ["protonvpn", "countries", "list"],
             function(output, exitCode) {
                 if (exitCode !== 0 || !output) return
                 var lines = output.trim().split('\n')
@@ -426,12 +426,16 @@ property string status: "Unknown"
                         visible: !root.connected && root.cliReady
                         width: parent.width - Theme.spacingM * 2
 
-                        StyledComboBox {
+                        ComboBox {
                             id: countryCombo
-                            width: parent.width - DankButton { iconName: "link"; visible: false }.width - Theme.spacingS
+                            width: parent.width
                             model: root.availableCountries
-                            currentIndex: root.selectedCountry ? root.availableCountries.indexOf(root.selectedCountry) : 0
-                            onCurrentIndexChanged: root.selectedCountry = root.availableCountries[currentIndex]
+                            currentIndex: root.selectedCountry && root.availableCountries.length > 0 ? root.availableCountries.indexOf(root.selectedCountry) : 0
+                            onCurrentIndexChanged: if (root.availableCountries.length > 0) root.selectedCountry = root.availableCountries[currentIndex]
+                            background: Rectangle {
+                                radius: Theme.cornerRadius
+                                color: Theme.surfaceContainer
+                            }
                         }
                     }
 
