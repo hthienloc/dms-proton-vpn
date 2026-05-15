@@ -6,6 +6,7 @@ import qs.Common
 import qs.Services
 import qs.Widgets
 import qs.Modules.Plugins
+import "./components"
 
 PluginComponent {
     id: root
@@ -429,7 +430,6 @@ property string status: "Unknown"
                         }
                         subtitle: root.commandRunning ? (root.previousServer || "Please wait...") : (root.getServerFull())
                         infoText: root.commandRunning ? root.previousCountry : root.getLocation()
-                        onClicked: refreshStatus()
                     }
 
                     Row {
