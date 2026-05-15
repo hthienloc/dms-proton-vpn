@@ -19,6 +19,49 @@ PluginSettings {
 
     StyledRect {
         width: parent.width
+        height: authColumn.implicitHeight + Theme.spacingL * 2
+        radius: Theme.cornerRadius
+        color: Theme.surfaceContainerHigh
+
+        Column {
+            id: authColumn
+            anchors.fill: parent
+            anchors.margins: Theme.spacingL
+            spacing: Theme.spacingM
+
+            StyledText {
+                text: "Credentials"
+                font.pixelSize: Theme.fontSizeMedium
+                font.weight: Font.Medium
+                color: Theme.surfaceText
+            }
+
+            StringSetting {
+                settingKey: "username"
+                label: "Username"
+                placeholder: "your@email.com"
+                defaultValue: ""
+            }
+
+            StringSetting {
+                settingKey: "password"
+                label: "Password"
+                placeholder: "••••••••"
+                defaultValue: ""
+            }
+
+            StyledText {
+                text: "Note: Enter your Proton VPN credentials to enable login functionality. Your credentials are stored locally."
+                font.pixelSize: Theme.fontSizeSmall
+                color: Theme.surfaceVariantText
+                width: parent.width
+                wrapMode: Text.Wrap
+            }
+        }
+    }
+
+    StyledRect {
+        width: parent.width
         height: behaviorColumn.implicitHeight + Theme.spacingL * 2
         radius: Theme.cornerRadius
         color: Theme.surfaceContainerHigh

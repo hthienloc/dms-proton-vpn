@@ -17,6 +17,7 @@ property string status: "Unknown"
     property bool connected: false
     property bool commandRunning: false
     property bool cliReady: true
+    property bool isLoggedIn: true
     property string previousServer: ""
     property string previousCountry: ""
     property string previousProtocol: ""
@@ -27,6 +28,30 @@ property string status: "Unknown"
     }
 
     readonly property bool autoRefresh: (pluginData.autoRefresh ?? true)
+    readonly property string storedUsername: pluginData.username || ""
+    readonly property string storedPassword: pluginData.password || ""
+    readonly property bool hasCredentials: storedUsername && storedPassword
+
+    function login() {
+        if (!root.storedUsername || !root.storedPassword) {
+            status = "Enter credentials in Settings"
+            return
+        }
+        if (root.commandRunning) return
+
+        root.commandRunning = true
+        status = "Logging in..."
+
+        Proc.runCommand(
+            "proton-login",
+            ["expect", "-c", `spawn protonvpn signin ${root.storedUsername}; expect "Password:"; send "${root.storedPassword}\\r"; expect eof`],
+            function(output, exitCode) {
+                root.commandRunning = false
+                root.fetchStatus()
+            },
+            30000
+        )
+    }
 
     Timer {
         id: statusTimer
@@ -36,7 +61,15 @@ property string status: "Unknown"
         onTriggered: fetchStatus()
     }
 
-    Component.onCompleted: fetchStatus()
+    Component.onCompleted: {
+        if (!root.storedUsername || !root.storedPassword) {
+            status = "Configure credentials in Settings"
+            cliReady = true
+            isLoggedIn = false
+        } else {
+            fetchStatus()
+        }
+    }
 
     function fetchStatus() {
         if (root.commandRunning) return
@@ -59,6 +92,18 @@ property string status: "Unknown"
     }
 
     function parseStatus(output) {
+        if (output.includes("Not logged in") || output.includes("Session expired")) {
+            isLoggedIn = false
+            connected = false
+            status = "Not logged in"
+            server = ""
+            country = ""
+            protocol = ""
+            return
+        }
+
+        isLoggedIn = true
+
         if (output.includes("Disconnected")) {
             connected = false
             status = "Disconnected"
@@ -67,10 +112,10 @@ property string status: "Unknown"
             protocol = ""
             return
         }
-        
+
         connected = true
         status = "Connected"
-        
+
         var lines = output.split('\n')
         for (var i = 0; i < lines.length; i++) {
             var line = lines[i].trim()
@@ -88,8 +133,10 @@ property string status: "Unknown"
     }
 
     function getDisplayText() {
-        var s = root.commandRunning ? root.previousServer : root.server
-        return (root.commandRunning ? root.previousConnected : root.connected) ? (s.split('#')[0] || "VPN") : "VPN"
+        if (!root.storedUsername || !root.storedPassword) return "Setup"
+        if (root.commandRunning) return "..."
+        var s = root.server
+        return root.connected ? (s.split('#')[0] || "VPN") : "VPN"
     }
 
     function getServerFull() {
@@ -142,10 +189,12 @@ property string status: "Unknown"
     }
 
     readonly property color pillColor: {
+        if (!root.hasCredentials) return Theme.error
         if (root.commandRunning) {
             return root.previousConnected ? Theme.warning : Theme.primary
         }
         if (!root.cliReady) return Theme.error
+        if (!root.isLoggedIn) return Theme.warning
         if (root.connected) return Theme.primary
         return Theme.surfaceText
     }
@@ -321,74 +370,66 @@ property string status: "Unknown"
                     StyledRect {
                         width: parent.width
                         radius: Theme.cornerRadius
-                        color: Theme.primaryContainer
+                        color: Theme.warningContainer
                         border.width: 1
-                        border.color: Theme.withAlpha(root.pillColor, 0.3)
-                        implicitHeight: statusColumn.implicitHeight + Theme.spacingM * 2
-                        visible: root.cliReady
+                        border.color: Theme.withAlpha(Theme.warning, 0.3)
+                        implicitHeight: loginColumn.implicitHeight + Theme.spacingM * 2
+                        visible: root.cliReady && !root.isLoggedIn
 
                         Column {
-                            id: statusColumn
+                            id: loginColumn
                             anchors.fill: parent
                             anchors.margins: Theme.spacingM
-                            spacing: Theme.spacingM
+                            spacing: Theme.spacingS
 
                             Row {
-                                spacing: Theme.spacingM
+                                spacing: Theme.spacingS
 
-                                Rectangle {
-                                    width: 40
-                                    height: 40
-                                    radius: 20
-                                    color: Theme.withAlpha(root.pillColor, 0.18)
-                                    border.width: 1
-                                    border.color: Theme.withAlpha(root.pillColor, 0.3)
-
-                                    DankIcon {
-                                        anchors.centerIn: parent
-                                        name: root.commandRunning ? "sync" : (root.connected ? "vpn_lock" : "vpn_lock")
-                                        size: 20
-                                        color: root.pillColor
-
-                                        RotationAnimator on rotation {
-                                            running: root.commandRunning
-                                            from: 0
-                                            to: 360
-                                            loops: Animation.Infinite
-                                            duration: 1000
-                                        }
-                                    }
+                                DankIcon {
+                                    name: "person_off"
+                                    size: 20
+                                    color: Theme.warning
+                                    anchors.verticalCenter: parent.verticalCenter
                                 }
 
-                                Column {
-                                    spacing: 4
-
-                                    StyledText {
-                                        text: {
-                                            if (root.commandRunning) {
-                                                return root.previousConnected ? "Disconnecting..." : "Connecting..."
-                                            }
-                                            return root.connected ? "Connected" : "Disconnected"
-                                        }
-                                        font.pixelSize: Theme.fontSizeMedium
-                                        font.weight: Font.DemiBold
-                                        color: Theme.surfaceText
-                                    }
-
-                                    StyledText {
-                                        text: root.commandRunning ? (root.previousServer || "Please wait...") : (root.getServerFull())
-                                        font.pixelSize: Theme.fontSizeSmall
-                                        color: Theme.surfaceVariantText
-                                    }
-
-                                    StyledText {
-                                        text: root.commandRunning ? root.previousCountry : root.getLocation()
-                                        font.pixelSize: Theme.fontSizeSmall
-                                        color: Theme.surfaceVariantText
-                                    }
+                                StyledText {
+                                    text: "Login Required"
+                                    font.pixelSize: Theme.fontSizeMedium
+                                    font.weight: Font.DemiBold
+                                    color: Theme.warning
                                 }
                             }
+
+                            StyledText {
+                                text: "Enter your Proton VPN credentials in Settings to sign in."
+                                font.pixelSize: Theme.fontSizeSmall
+                                color: Theme.surfaceVariantText
+                            }
+
+                            DankButton {
+                                text: "Sign In"
+                                iconName: "login"
+                                backgroundColor: Theme.primary
+                                textColor: Theme.onPrimary
+                                onClicked: login()
+                                visible: root.hasCredentials
+                            }
                         }
+                    }
+
+                    StatusDisplay {
+                        id: statusDisplay
+                        active: root.connected
+                        iconName: root.commandRunning ? "sync" : (root.connected ? "vpn_lock" : "vpn_lock")
+                        title: {
+                            if (root.commandRunning) {
+                                return root.previousConnected ? "Disconnecting..." : "Connecting..."
+                            }
+                            return root.connected ? "Connected" : "Disconnected"
+                        }
+                        subtitle: root.commandRunning ? (root.previousServer || "Please wait...") : (root.getServerFull())
+                        infoText: root.commandRunning ? root.previousCountry : root.getLocation()
+                        onClicked: refreshStatus()
                     }
 
                     Row {
@@ -422,29 +463,10 @@ property string status: "Unknown"
                         visible: root.connected && root.cliReady
                         width: parent.width
 
-                        Rectangle {
-                            width: parent.width
-                            implicitHeight: 60
-                            radius: Theme.cornerRadius
-                            color: Theme.surfaceContainer
-
-                            Column {
-                                anchors.fill: parent
-                                anchors.margins: Theme.spacingM
-                                spacing: 2
-
-                                StyledText {
-                                    text: "Protocol"
-                                    font.pixelSize: Theme.fontSizeSmall - 2
-                                    color: Theme.surfaceVariantText
-                                }
-
-                                StyledText {
-                                    text: (root.commandRunning ? root.previousProtocol : root.protocol) || "-"
-                                    font.pixelSize: Theme.fontSizeSmall - 1
-                                    color: Theme.surfaceText
-                                }
-                            }
+                        InfoTile {
+                            Layout.fillWidth: true
+                            label: "Protocol"
+                            value: (root.commandRunning ? root.previousProtocol : root.protocol) || "-"
                         }
                     }
 
