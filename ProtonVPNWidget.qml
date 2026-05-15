@@ -464,9 +464,10 @@ property string status: "Unknown"
                         width: parent.width
 
                         InfoTile {
-                            Layout.fillWidth: true
+                            width: (parent.width - 8) / 2
                             label: "Protocol"
                             value: (root.commandRunning ? root.previousProtocol : root.protocol) || "-"
+                            iconName: "security"
                         }
                     }
 
